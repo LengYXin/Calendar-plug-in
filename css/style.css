@@ -1,0 +1,16 @@
+.Date-container {
+    background-color: #ccc
+}
+
+.Date-container ul,
+* {
+    margin: 0;
+    padding: 0;
+    list-style: none
+}
+
+.Date-container ul>li {
+    display: inline-block;
+    width: 13.2%;
+    text-align: center;
+}

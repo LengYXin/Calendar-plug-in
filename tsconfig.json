@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        // "typeRoots" : ["../typings"],
+        // "target": "es5",
+        "module": "commonjs",
+        // "moduleResolution": "node",
+        "sourceMap": true
+            // "emitDecoratorMetadata": true,
+            // "experimentalDecorators": true,
+            // "removeComments": false,
+            // "noImplicitAny": false,
+            // "outFile": "main.js",
+            // "preserveConstEnums": true
+    } //,
+    //"include": [
+    // "../typings/angular-ui-router/angular-ui-router.d.ts",
+    // "src/**/*",
+    // "../typings/**/*"
+    //]
+}
