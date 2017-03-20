@@ -1,110 +1,55 @@
 /**
  * date
  */
-interface config {
-    Element: Element | string;
-    Date?: Date | string;
-    Callback?: Function;
-}
+import dateProcessing from './dateProcessing';
 export default class {
     constructor(obj: config) {
         this.config = obj;
         this.init();
         // window["Calendar"] = this;
         console.log(this);
+        window.addEventListener("resize", () => {
+            this.init();
+        });
     }
-    private config: config
+    //配置
+    private config: config;
     //日期数据
-    private monthDays = {
-        preMonthDays: [],
-        thisMonthDays: [],
-        nextMonthDays: []
-    };
-    private currentTime: {
-        Day?: number,
-        Date?: Date,
-        preDate?: Date,
-        nextDate?: Date,
-        firstDay?: number,
-        lastDay?: number,
-        DateStr?: string,
-        SelectElement?: HTMLLIElement
-    } = {};
+    private monthDays: monthDays = {};
+    //当前时间数据
+    private currentTime: currentTime = {};
     //日历容器
     private container: Element;
+
     //标题头
     private title = ["日", "一", "二", "三", "四", "五", "六"];
+    /**
+     * 初始化
+     */
     private init() {
-        this.CreateDate();
-        this.DaterNew();
-        this.GetContainer(this.config.Element);
+        // this.CreateDate();
+        // this.DaterNew();
+        let date = new dateProcessing(this.config);
+        this.monthDays = date.monthDays;
+        this.currentTime = date.currentTime;
+        this.GetContainer();
         this.SetCalendar();
     }
-    //创建时间参数
-    private CreateDate() {
-        let date = new Date();
-        let y, m, d;
-        if (typeof this.config.Date === "string") {
-            let date_ = new Date(this.config.Date);
-            y = date_.getFullYear();
-            m = date_.getMonth();
-            d = date_.getDate();
+    /**
+     * 清空容器
+     */
+    private EmptyDlement() {
+        // debugger
+        if (this.container) {
+            this.container.remove();
+            this.container = null;
         }
-        if (this.config.Date != null && typeof this.config.Date === "object") {
-            y = this.config.Date.getFullYear();
-            m = this.config.Date.getMonth();
-            d = this.config.Date.getDate();
-        } else {
-            y = date.getFullYear();
-            m = date.getMonth();
-            d = date.getDate();
-        }
-        this.currentTime.Day = d;
-        this.currentTime.DateStr = y + "-" + (m + 1) + "-" + d;
-        this.currentTime.Date = new Date(y, m, d);//当前日期
-        this.currentTime.preDate = new Date(y, m);//上一个月
-        this.currentTime.preDate.setDate(0);
-        this.currentTime.nextDate = new Date(y, m + 1);//下一个月
-        this.currentTime.firstDay = new Date(y, m).getDay();//1号 星期
-        this.currentTime.lastDay = new Date(y, m, this.DaysInMonth(y, m)).getDay();//最后一天 星期
     }
-    //创建3个月的时间数组
-    private DaterNew() {
-        this.monthDays = {
-            preMonthDays: [],
-            thisMonthDays: [],
-            nextMonthDays: []
-        };
-        let y = this.currentTime.Date.getFullYear(),
-            m = this.currentTime.Date.getMonth(),
-            d = this.currentTime.Date.getDate(),
-            DaysInMonth = this.DaysInMonth(y, m)
-            ;
-
-        //当前月天数
-        for (let i = 1; i <= DaysInMonth; i++) {
-            this.monthDays.thisMonthDays.push(i);
-        }
-        //上一个月
-        let preDate = this.currentTime.preDate;
-        let premDays = this.DaysInMonth(preDate.getFullYear(), preDate.getMonth());
-        for (let i = 1; i <= premDays; i++) {
-            this.monthDays.preMonthDays.push(i);
-        }
-        //下一个月
-        let nextDate = this.currentTime.nextDate;
-        let nextDays = this.DaysInMonth(nextDate.getFullYear(), nextDate.getMonth());
-        for (let i = 1; i <= nextDays; i++) {
-            this.monthDays.nextMonthDays.push(i);
-        }
-        return this;
-    };
-    //返回一个月得总天数
-    private DaysInMonth(year, month) {
-        return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-    }
-    //获取创建日历容器
-    private GetContainer(e: Element | string) {
+    /**
+     * 获取创建日历容器
+     */
+    private GetContainer() {
+        let e = this.config.Element;
         let container: Element;
         if (typeof e === "string") {
             container = document.querySelector(e);
@@ -118,54 +63,102 @@ export default class {
         // console.dir(this.container);
         return this;
     }
-    // 设置日历
+    /**
+     * 对比时间戳  事件 (同一天)
+     * @param li 当前 de  li标签 （根标签）
+     * @param e  存放 日期的容器
+     * @param x 日期参数
+     */
+    private createLiEvent(li: Element, e: Element, x: MonthData) {
+        this.config.Events.forEach(v => {
+            let date = new Date(v.TimeStamp);
+            // console.log(date.getFullYear(), x.Date.getFullYear());
+            // console.log(date.getMonth(), x.Date.getMonth());
+            // console.log(date.getDate(), x.Date.getDate());
+            if (date.getFullYear() == x.Date.getFullYear()) {
+                if (date.getMonth() == x.Date.getMonth()) {
+                    if (date.getDate() == x.Date.getDate()) {
+                        // let span = document.createElement("span");
+                        // span.innerHTML = "*";
+                        // e.appendChild(span);
+                        let span = e.querySelector("span");
+                        if (e.querySelector("span")) {
+                            span.innerHTML += " *";
+                        } else {
+                            span = document.createElement("span");
+                            span.innerHTML = "*";
+                            e.appendChild(span);
+                        }
+                        let events = <Array<any>>li["$Events"] || [];
+                        events.push(v);
+                        li["$Events"] = events;
+                    }
+                }
+            }
+        });
+
+    }
+    /**
+     * 创建 日期 li标签 （可根据需求更改为别的标签）
+     * @param obj 日期参数 
+     */
+    private createLi(obj: { x: MonthData, liWH?: string, $Type?: string }) {
+        let li = document.createElement("li");
+        let div = document.createElement("div");
+        let divDate = document.createElement("div");
+        div.className = "day-con";
+        divDate.className = "Date";
+        divDate.innerHTML = obj.x.Day.toString();
+        li["$calendar"] = obj.x;
+        li["$Type"] = obj.$Type;
+        li.style.width = obj.liWH + "px";
+        li.style.height = obj.liWH + "px";
+        div.appendChild(divDate);
+        //日期事件
+        this.createLiEvent(li, div, obj.x);
+        li.appendChild(div);
+        return li;
+    }
+    /**
+     * 设置日历 绑定 dom对象
+     * 默认为 有序列表 （UL）
+     */
     private SetCalendar() {
         let TemplateTitle = document.createElement(`ul`)
             , TemplateBody = document.createElement("ul");
         ;
         let liWH = (this.container.clientWidth / 7 * 0.99).toFixed(2);
-        //创建 li标签
-        let createLi = (x) => {
-            let li = document.createElement("li");
-            li.innerHTML = x;
-            li["$calendar"] = x;
-            li.style.width = liWH + "px";
-            li.style.height = liWH + "px";
-            return li;
-        }
         this.title.forEach(x => {
-            TemplateTitle.appendChild(createLi(x));
+            let li = document.createElement("li");
+            li.style.width = liWH + "px";
+            // li.style.height = liWH + "px";
+            li.innerHTML = x;
+            li.style.padding = "5px 0";
+            TemplateTitle.appendChild(li);
         });
 
         //上
-        this.monthDays.preMonthDays.forEach((x, i) => {
-            if (i >= this.monthDays.preMonthDays.length - this.currentTime.firstDay) {
-                let li = createLi(x);
-                li["$Type"] = "pre";
+        this.monthDays.preMonth.forEach((x, i) => {
+            if (i >= this.monthDays.preMonth.length - this.currentTime.firstDay) {
+                let li = this.createLi({ x: x, liWH: liWH, $Type: "pre" });
                 TemplateBody.appendChild(li);
             }
         });
         //当前
-        this.monthDays.thisMonthDays.forEach(x => {
-            let li = createLi(x);
-            let span = document.createElement("span");
-            span.innerHTML = "*"
-            span.style.color = "red";
-            span["$calendar"] = x;
-            span["$Type"] = "this";
-            li["$Type"] = "this";
-            li.appendChild(span);
-            if (x == this.currentTime.Day) {
-                li.style.backgroundColor = "red";
+        this.monthDays.thisMonth.forEach(x => {
+            let li = this.createLi({ x: x, liWH: liWH, $Type: "this" });
+            li.classList.add("this");
+            if (x.Day == this.currentTime.Day) {
+                li.classList.add("Selected");
                 this.currentTime.SelectElement = li;
+                this.Callback();
             }
             TemplateBody.appendChild(li);
         });
         //下
-        this.monthDays.nextMonthDays.forEach((x, i) => {
+        this.monthDays.nextMonth.forEach((x, i) => {
             if (i < 6 - this.currentTime.lastDay) {
-                let li = createLi(x);
-                li["$Type"] = "next";
+                let li = this.createLi({ x: x, liWH: liWH, $Type: "next" });
                 TemplateBody.appendChild(li);
             }
         });
@@ -174,7 +167,7 @@ export default class {
             this.DateEvent(x)
         });
         // debugger
-        let p = document.createElement("p");
+        let p = document.createElement("h3");
         p.className = "text-center";
         p.innerHTML = this.currentTime.Date.getFullYear() + "-" + (this.currentTime.Date.getMonth() + 1);
         this.container.appendChild(p);
@@ -182,47 +175,71 @@ export default class {
         this.container.appendChild(TemplateBody);
         return this;
     }
-    //清空元素
-    private EmptyDlement() {
-        // debugger
-        if (this.container) {
-            this.container.remove();
-            this.container = null;
-        }
-    }
+    /**
+     * 上个月
+     * @param day 天 默认为1
+     */
     public pre(day?) {
         this.config.Date = new Date(this.currentTime.preDate.getFullYear(), this.currentTime.preDate.getMonth(), day || 1);
         this.init();
     }
+    /**
+     * 下个月
+     * @param day 天 默认为1
+     */
     public next(day?) {
         this.config.Date = new Date(this.currentTime.nextDate.getFullYear(), this.currentTime.nextDate.getMonth(), day || 1);
         this.init();
     }
-    //点击事件
+    /**
+     * 点击事件 使用的事件委托 所以 需要找到 根元素 Li 节点后执行对应的事件
+     * 执行回调事件
+     * @param e 事件对象
+     */
     private DateEvent(e: MouseEvent) {
-        this.currentTime.Day = e.toElement["$calendar"];
-        // console.log(e.toElement["$Type"], e);
-        if (e.toElement.nodeName != "LI" && e.toElement.nodeName != "SPAN") {
-            return;
-        }
-        if (e.toElement["$Type"] == "this") {
-
-            this.currentTime.SelectElement.style.backgroundColor = "";
-            // console.log("DateEvent", e);
-            this.currentTime.SelectElement = <HTMLLIElement>e.toElement;
-            if (e.toElement.nodeName == "SPAN") {
-                this.currentTime.SelectElement = <HTMLLIElement>e.toElement.parentNode
-            }
-            this.currentTime.SelectElement.style.backgroundColor = "red";
+        this.currentTime.SelectElement.classList.remove("Selected");
+        this.currentTime.SelectElement = this.LookupLI(e.toElement) || this.currentTime.SelectElement;
+        this.currentTime.Day = this.currentTime.SelectElement["$calendar"].Day;
+        //点击当前 月份
+        if (this.currentTime.SelectElement["$Type"] == "this") {
+            this.currentTime.SelectElement.classList.add("Selected");
         } else {
-            if (e.toElement["$Type"] == "pre") {
+            //上个月
+            if (this.currentTime.SelectElement["$Type"] == "pre") {
                 this.pre(this.currentTime.Day);
-            } else {
+            }
+            //下个月
+            else {
                 this.next(this.currentTime.Day);
             }
         }
         this.currentTime.Date.setDate(this.currentTime.Day);
-        this.config.Callback(this.currentTime.SelectElement, this.currentTime.Date);
+        this.Callback();
+    }
+    /**
+     * 查找li 标签
+     * @param e 子标签
+     */
+    private LookupLI(e: Element) {
+        try {
+            if (e.nodeName == "LI") {
+                return <HTMLLIElement>e;
+            } else {
+                return this.LookupLI(<Element>e.parentNode);
+            }
+        } catch (error) {
+            return null;
+        }
+    }
+    /**
+     * 回调事件
+     */
+    private Callback() {
+        this.config.Callback({
+            Element: this.currentTime.SelectElement,
+            Date: this.currentTime.Date,
+            Events: this.currentTime.SelectElement["$Events"] || []
+        });
     }
 
 }
