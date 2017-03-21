@@ -6,7 +6,7 @@ var path = require('path');
 // http://www.jbrantly.com/typescript-and-webpack/  配置项
 module.exports = {
     entry: {
-        app: ["./src/app.ts"]
+        app: ["./src1/app.ts"]
     },
     output: {
         path: __dirname + '/dist', //输出目录
